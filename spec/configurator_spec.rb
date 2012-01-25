@@ -3,7 +3,7 @@ require './lib/configurator'
 
 describe Configurator::Mapper do
   let(:config_hash) do
-    {:foo => {:bar => {:baz => 10 } } } 
+    {'foo' => {'bar' => {'baz' => 10 } } } 
   end
 
   before do 
@@ -55,6 +55,8 @@ describe Configurator do
     end
 
     it 'should create methods for top level keys' do
+      Configurator.env = nil
+      Configurator.load! 
       Configurator.development.should be_a(Configurator::Mapper)
     end
 

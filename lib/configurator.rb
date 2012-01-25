@@ -12,12 +12,14 @@ class Configurator
   class Mapper
 
     def initialize(*args)
+      args.map! {|n| n.to_s }
+
       @parents = args
       @config = Configurator.raw
 
       parents = @parents.dup
 
-      while parent = @parents.shift
+      while parent = parents.shift
         @config = @config.fetch(parent) 
       end
 
@@ -27,7 +29,7 @@ class Configurator
 
     def method_missing(*args)
       super if args.count > 1
-      process(args.first)
+      process(args.first.to_s)
     end
 
     private
