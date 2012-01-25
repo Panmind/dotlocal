@@ -1,0 +1,10 @@
+:this
+  :is 
+    ------- a line 
+    { something wrong }
+    :not
+            :a 
+       :good
+                    :yaml
+                                :file
+       
