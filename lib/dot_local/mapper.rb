@@ -1,16 +1,17 @@
-class Configurator
+module DotLocal
   class Mapper
 
-    def initialize(*args)
+    def initialize(config, *args)
       args.map! {|n| n.to_s }
 
+      @config = config
       @parents = args
-      @config = Configurator.raw
+      @raw = config.raw 
 
       parents = @parents.dup
 
       while parent = parents.shift
-        @config = @config.fetch(parent) 
+        @raw = @raw.fetch(parent) 
       end
 
     rescue KeyError
@@ -25,11 +26,11 @@ class Configurator
     private
 
     def process(key)
-      if @config.fetch(key).is_a? Hash
+      if @raw.fetch(key).is_a? Hash
         @parents << key
-        self.class.new(*@parents)
+        self.class.new(@config, *@parents)
       else
-        @config.fetch(key)
+        @raw.fetch(key)
       end
     end
   end
