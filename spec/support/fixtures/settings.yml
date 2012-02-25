@@ -2,7 +2,6 @@ production:
   key_one: 1 
   key_two: 2 
 
-
 development: 
   key_one: 11 
   key_two: 22 
