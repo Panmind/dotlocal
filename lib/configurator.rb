@@ -4,7 +4,6 @@ require 'pathname'
 require 'configurator/mapper' 
 
 class Configurator
-  include Singleton
 
   SettingsFileName = 'settings.yml'
   SettingsLocalFileName = 'settings.local.yml'
