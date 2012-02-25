@@ -20,6 +20,20 @@ module DotLocal
     def env=(env)
       @env = env
     end
+
+    def deep_merge!(winner, looser)
+      merger = proc do |key,winner,looser|
+        if Hash === winner && Hash === looser
+          winner.merge(looser, &merger)
+        else
+          winner.to_s == '' ? looser : winner
+        end
+      end
+
+      winner.merge!(looser, &merger)
+      winner
+    end
+
   end
       
 end

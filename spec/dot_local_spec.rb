@@ -1,6 +1,28 @@
 require 'spec_helper'
 require './lib/dot_local'
 
+describe DotLocal do
+  describe 'deep_merge!' do
+    let(:winner) { {:a => {:b => 'y'}, :c => nil }}
+    let(:looser) { {:a => {:b => 'x', :d => 'x'}, :c => 'x'} }
+    before do
+      DotLocal.deep_merge!(winner,looser)
+    end
+
+    it 'should give priority if key exists' do
+      winner[:a][:b].should == 'y'
+    end
+
+    it 'should keep key in nested hash' do
+      winner[:a][:d].should == 'x'
+    end
+
+    it 'should keep exceeding key' do
+      winner[:c].should == 'x'
+    end
+  end
+end
+
 describe DotLocal::Mapper do
   let(:config_hash) do
     {'foo' => {'bar' => {'baz' => 10 } } }
@@ -24,7 +46,7 @@ describe DotLocal::Mapper do
 
 end
 
-describe DotLocal do
+describe DotLocal::Configuration do
   it 'should set path by options' do
     config = DotLocal::Configuration.new(:path => '/path/to/me')
     config.path.to_s.should == '/path/to/me'
@@ -47,6 +69,11 @@ describe DotLocal do
     expect {
       config.load!
     }.to raise_error(DotLocal::MissingFile)
+  end
+
+  it 'should preserve extension for local file name' do
+    config = DotLocal::Configuration.new(:file_name => 'foo.yml')
+    config.local_file_name.should == 'foo.local.yml'
   end
 
   context 'on fixtures path' do 
@@ -123,5 +150,19 @@ describe DotLocal do
         }.to raise_error(DotLocal::BlankValue)
       end
     end
+
+    context 'a settings file with local' do
+      let(:config) do
+        DotLocal::Configuration.new(:path => path,
+                                    :file_name => 'with_local.yml')
+      end
+
+      it 'should have settings overridden by local' do
+        config.load!
+        config.food.cheese.parmesan.should == 2
+      end
+
+    end
   end
+
 end

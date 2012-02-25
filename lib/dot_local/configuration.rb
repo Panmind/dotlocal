@@ -2,7 +2,7 @@ module DotLocal
   class Configuration
 
     SettingsFileName = 'settings.yml'
-    SettingsLocalFileName = 'settings.local.yml'
+    LocalSuffix = 'local'
     
     ReservedKeys = %w(env path file_name local_file_name raw)
 
@@ -15,13 +15,9 @@ module DotLocal
 
       @path = File.expand_path('..', __FILE__) if @path.nil?
       @file_name ||= SettingsFileName
-      @local_file_name ||= SettingsLocalFileName
+      @local_file_name ||= interpolate_local_filename
     end
     
-    # def self.to_ary
-    #   # rspec seems to require this
-    # end
-
     def method_missing(*args)
       if args.size == 1
         # Calling something like Configurator.key_one
@@ -46,23 +42,23 @@ module DotLocal
 
     def load!
       raise DotLocal::DoubleLoad if @loaded 
-
       @loaded = true
-      file = File.read(File.join(path, file_name).to_s)
-      @raw = parse(file)
-      @raw.freeze
-
-      # find local and merge @raw with @local_raw
+      @raw = parse(file_name)
+      merge_with_local! if local_exists?
       validate_reserved_keys! 
       validate_blank_values! 
-
-      @raw
-
-    rescue Errno::ENOENT, TypeError
-      raise DotLocal::MissingFile.new("File #{file} not found")
+      @raw.freeze
     end
 
     private
+
+    def merge(first, second)
+
+    end
+
+    def local_exists?
+      File.exists?(File.join(path, local_file_name))
+    end
 
     def recursive_find_blank_values(key,value)
       if value.is_a?(Hash)
@@ -90,15 +86,27 @@ module DotLocal
       end
     end
 
-    def parse(file)
+    def parse(file_name)
+      file = File.read(File.join(path, file_name).to_s)
       yaml = YAML.load(file)
       yaml = yaml.fetch(@env) unless @env.nil?
       raise unless yaml.is_a? Hash
       yaml
+    rescue Errno::ENOENT
+      raise DotLocal::MissingFile.new("File #{file} not found")
     rescue => e 
       raise ParsingError.new(e.message)
     end
 
+    def interpolate_local_filename
+      ext = File.extname(@file_name)
+      "#{@file_name.gsub(ext, '')}.#{LocalSuffix}#{ext}"
+    end
+
+    def merge_with_local!
+      local_hash = parse(local_file_name)
+      @raw = DotLocal.deep_merge!(local_hash, @raw)
+    end
 
   end
 end
