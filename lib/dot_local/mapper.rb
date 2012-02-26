@@ -2,36 +2,53 @@ module DotLocal
   class Mapper
 
     def initialize(config, *args)
-      args.map! {|n| n.to_s }
+      @parents = args.map!(&:to_s) 
+      @config  = config
+      @raw     = config.raw
+      parents  = @parents.dup 
 
-      @config = config
-      @parents = args
-      @raw = config.raw 
-
-      parents = @parents.dup
-
+      # Iterate the three and stop at the last 
+      # key. @raw is now the last member of
+      # the chain. 
+      # This means that @raw can be either a Hash or 
+      # a value
       while parent = parents.shift
-        @raw = @raw.fetch(parent) 
+        @raw = Mapper.fetch(@raw, parent)
       end
 
-    rescue KeyError
-      raise KeyNotFound.new("You were looking for #{parent} but no luck")
     end
 
     def method_missing(*args)
       super if args.count > 1
-      process(args.first.to_s)
+      return_value_or_mapper(args.first.to_s)
+    end
+
+    def self.fetch(hash, key)
+      hash.fetch(key) 
+    rescue KeyError
+      raise KeyNotFound.new("You were looking for #{key} but no luck")
     end
 
     private
-
-    def process(key)
-      if @raw.fetch(key).is_a? Hash
+    
+    def return_value_or_mapper(key)
+      if return_mapper?(@raw, key)
         @parents << key
         self.class.new(@config, *@parents)
       else
-        @raw.fetch(key)
+        self.class.fetch(@raw, key)
       end
     end
+
+    def return_mapper?(value, key)
+      value.is_a?(Hash) && self.class.key_is_hash?(value, key) 
+    end
+
+    def self.key_is_hash?(value, key)
+      value.fetch(key).is_a?(Hash)
+    rescue KeyError
+      false
+    end
+
   end
 end

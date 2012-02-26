@@ -43,7 +43,6 @@ describe DotLocal::Mapper do
     mapper = DotLocal::Mapper.new(config, :foo)
     mapper.bar.should be_a(DotLocal::Mapper)
   end
-
 end
 
 describe DotLocal::Configuration do
@@ -53,8 +52,7 @@ describe DotLocal::Configuration do
   end
 
   it 'should set env by options' do
-    DotLocal.env = 'production'
-    config = DotLocal::Configuration.new
+    config = DotLocal::Configuration.new(:env => 'production')
     config.env.should == 'production'
   end
 
@@ -76,7 +74,7 @@ describe DotLocal::Configuration do
     config.local_file_name.should == 'foo.local.yml'
   end
 
-  context 'on fixtures path' do 
+  context 'on fixtures path' do
     let(:path) { File.join(File.dirname(__FILE__), 'support', 'fixtures') }
 
     context 'with a settings file' do
@@ -86,19 +84,25 @@ describe DotLocal::Configuration do
         end
       end
 
+      it 'should get a value without env' do
+        config.env = nil
+        config.reload!
+        config.production.key_one.should == 1
+      end
+
       it 'should return the raw settings hash' do
         config.raw.should be_a(Hash)
       end
 
-      it 'should raise for double load call' do 
+      it 'should raise for double load call' do
         expect {
-          config.load! 
+          config.load!
         }.to raise_error(DotLocal::DoubleLoad)
       end
 
       it 'should allow for reload' do
         expect {
-          config.reload! 
+          config.reload!
         }.to_not raise_error
       end
 
@@ -111,7 +115,7 @@ describe DotLocal::Configuration do
       end
 
       it 'should create methods for top level keys' do
-        DotLocal.env = nil
+        config.env = nil
         config.reload!
         config.development.should be_a(DotLocal::Mapper)
       end
@@ -121,6 +125,19 @@ describe DotLocal::Configuration do
         config.reload!
         expect {
           config.development
+        }.to raise_error(DotLocal::KeyNotFound)
+      end
+
+      it 'should get a value when env is set' do
+        config.env = 'development'
+        config.file_name = 'settings.yml'
+        config.reload!
+        config.key_one.should == 11
+      end
+
+      it 'should raise when calling a missing config key' do
+        expect {
+          config.non_existing
         }.to raise_error(DotLocal::KeyNotFound)
       end
     end
@@ -144,9 +161,9 @@ describe DotLocal::Configuration do
                                     :file_name => 'blank_values.yml')
       end
 
-      it 'should raise an exception' do 
-        expect { 
-          config.load! 
+      it 'should raise an exception' do
+        expect {
+          config.load!
         }.to raise_error(DotLocal::BlankValue)
       end
     end

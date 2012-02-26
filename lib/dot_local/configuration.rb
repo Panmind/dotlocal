@@ -6,12 +6,13 @@ module DotLocal
     
     ReservedKeys = %w(env path file_name local_file_name raw)
 
-    attr_accessor :path, :file_name, :local_file_name, :raw
+    attr_accessor :env, :path, :file_name, :local_file_name, :raw
 
     def initialize(options={}) 
       @path = options.delete :path
       @file_name = options.delete :file_name
       @local_file_name = options.delete :local_file_name
+      @env = options.delete :env
 
       @path = File.expand_path('..', __FILE__) if @path.nil?
       @file_name ||= SettingsFileName
@@ -19,20 +20,13 @@ module DotLocal
     end
     
     def method_missing(*args)
-      if args.size == 1
-        # Calling something like Configurator.key_one
-        Mapper.new(self, args.first)
-      else
-        super
+      super unless args.size == 1
+      key = args.first.to_s 
+      if Mapper.key_is_hash?(@raw, key) 
+        Mapper.new(self, key)
+      else 
+        Mapper.fetch(@raw, key)
       end
-    end
-
-    def env=(env)
-      @env = env 
-    end
-
-    def env
-      @env ||= DotLocal.env 
     end
 
     def reload!
@@ -44,9 +38,14 @@ module DotLocal
       raise DotLocal::DoubleLoad if @loaded 
       @loaded = true
       @raw = parse(file_name)
+      @parsed = @raw
+      @raw = @raw.fetch(@env.to_s) unless @env.nil?
+
       merge_with_local! if local_exists?
-      validate_reserved_keys! 
+      
       validate_blank_values! 
+      validate_reserved_keys! 
+      
       @raw.freeze
     end
 
@@ -89,9 +88,9 @@ module DotLocal
     def parse(file_name)
       file = File.read(File.join(path, file_name).to_s)
       yaml = YAML.load(file)
-      yaml = yaml.fetch(@env) unless @env.nil?
       raise unless yaml.is_a? Hash
       yaml
+
     rescue Errno::ENOENT
       raise DotLocal::MissingFile.new("File #{file} not found")
     rescue => e 
@@ -105,6 +104,7 @@ module DotLocal
 
     def merge_with_local!
       local_hash = parse(local_file_name)
+      local_hash = local_hash.fetch(@env.to_s) unless @env.nil?
       @raw = DotLocal.deep_merge!(local_hash, @raw)
     end
 

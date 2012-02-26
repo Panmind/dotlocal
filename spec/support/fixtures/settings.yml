@@ -1,6 +1,9 @@
-production:
+:defaults: &defaults
   key_one: 1 
   key_two: 2 
+
+production:
+  <<: *defaults
 
 development: 
   key_one: 11 
