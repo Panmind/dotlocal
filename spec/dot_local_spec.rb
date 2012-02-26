@@ -43,6 +43,12 @@ describe DotLocal::Mapper do
     mapper = DotLocal::Mapper.new(config, :foo)
     mapper.bar.should be_a(DotLocal::Mapper)
   end
+
+  it 'should have a to_hash method' do
+    mapper = DotLocal::Mapper.new(config, :foo)
+    mapper.bar.to_hash.should == {'baz' => 10}
+  end
+
 end
 
 describe DotLocal::Configuration do

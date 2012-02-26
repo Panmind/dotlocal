@@ -15,7 +15,6 @@ module DotLocal
       while parent = parents.shift
         @raw = Mapper.fetch(@raw, parent)
       end
-
     end
 
     def method_missing(*args)
@@ -27,6 +26,10 @@ module DotLocal
       hash.fetch(key) 
     rescue KeyError
       raise KeyNotFound.new("You were looking for #{key} but no luck")
+    end
+
+    def to_hash
+      @raw if @raw.is_a?(Hash)
     end
 
     private
